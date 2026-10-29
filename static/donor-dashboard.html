@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Donor Portal — BloodConnect</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .portal-page { min-height: 100vh; padding: 30px 24px 60px; }
+    .portal-wrap { width: min(100%, 980px); margin: 0 auto; }
+    .portal-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 42px; }
+    .portal-brand { color: var(--text-main); text-decoration: none; font-size: 1.25rem; font-weight: 800; }
+    .portal-brand span { color: var(--primary); }
+    .portal-links { display: flex; align-items: center; gap: 16px; }
+    .portal-links a { color: var(--primary); font-size: .88rem; font-weight: 700; text-decoration: none; }
+    .portal-links button { padding: 8px 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); background: #fff; color: var(--text-muted); cursor: pointer; font: inherit; }
+    .portal-heading { margin-bottom: 24px; }
+    .portal-heading h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -.035em; }
+    .portal-heading p { margin-top: 6px; color: var(--text-muted); }
+    .portal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .portal-card { padding: 24px; border: 1px solid var(--border-card); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+    .portal-card h2 { margin-bottom: 8px; font-size: 1.08rem; }
+    .portal-card p { margin-bottom: 18px; color: var(--text-muted); font-size: .88rem; }
+    .portal-note { margin-top: 20px; color: var(--text-light); font-size: .78rem; }
+    @media (max-width: 560px) { .portal-page { padding: 22px 14px 40px; } .portal-grid { grid-template-columns: 1fr; } .portal-nav { align-items: flex-start; } .portal-links { gap: 9px; } }
+  </style>
+</head>
+<body>
+  <main class="portal-page">
+    <div class="portal-wrap">
+      <nav class="portal-nav">
+        <a class="portal-brand" href="index.html">Blood<span>Connect</span> Donor</a>
+        <div class="portal-links">
+          <a href="index.html">Home</a>
+          <button id="donorSignOut" type="button">Sign out</button>
+        </div>
+      </nav>
+      <header class="portal-heading">
+        <h1 id="donorWelcome">Donor portal</h1>
+        <p>Your dedicated space for donor registration and local blood needs.</p>
+      </header>
+      <section class="portal-grid">
+        <article class="portal-card">
+          <h2>Donor registration</h2>
+          <p>Register or update your donor details through the BloodConnect donor form.</p>
+          <a class="btn-hero-primary" href="index.html?open=donor">Open donor form</a>
+        </article>
+        <article class="portal-card">
+          <h2>Nearby blood needs</h2>
+          <p>Find verified volunteer donors and contact confirmed blood banks in your area.</p>
+          <a class="btn-hero-secondary" href="index.html?open=donors">Browse local listings</a>
+        </article>
+      </section>
+      <p class="portal-note">Demo portal: sign-in is not connected to a verified donor account yet.</p>
+    </div>
+  </main>
+  <script>
+    const user = JSON.parse(localStorage.getItem('bc_user') || 'null');
+    if (!user || user.role !== 'Donor') {
+      window.location.replace('donor-login.html');
+    } else {
+      document.getElementById('donorWelcome').textContent = `Welcome, ${user.name}`;
+    }
+    document.getElementById('donorSignOut').addEventListener('click', () => {
+      localStorage.removeItem('bc_user');
+      window.location.href = 'donor-login.html';
+    });
+  </script>
+</body>
+</html>

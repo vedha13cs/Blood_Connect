@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Records — BloodConnect</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .admin-page { min-height: 100vh; padding: 28px 20px 60px; }
+    .admin-wrap { width: min(100%, 1120px); margin: 0 auto; }
+    .admin-nav, .admin-heading, .admin-toolbar, .admin-tabs, .record-heading, .record-actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .admin-nav { margin-bottom: 42px; }
+    .admin-brand { color: var(--text-main); font-size: 1.2rem; font-weight: 800; text-decoration: none; }
+    .admin-brand span { color: var(--primary); }
+    .admin-nav a:last-child, .admin-link { color: var(--primary); font-size: .86rem; font-weight: 700; text-decoration: none; }
+    .admin-panel { width: min(100%, 560px); margin: 0 auto; padding: 30px; border: 1px solid var(--border-card); border-radius: var(--radius-xl); background: #fff; box-shadow: var(--shadow-card); }
+    .admin-panel h1 { margin-bottom: 8px; font-size: 1.7rem; letter-spacing: -.03em; }
+    .admin-muted { color: var(--text-muted); font-size: .88rem; }
+    .admin-warning { margin: 18px 0; padding: 13px; border: 1px solid #f2d4a7; border-radius: 10px; background: #fff8e9; color: #72521d; font-size: .8rem; line-height: 1.55; }
+    .admin-panel .btn-hero-primary { width: 100%; justify-content: center; }
+    .admin-header { margin-bottom: 22px; }
+    .admin-heading { align-items: flex-end; flex-wrap: wrap; }
+    .admin-heading h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -.035em; }
+    .admin-heading p { margin-top: 5px; color: var(--text-muted); }
+    .admin-toolbar { margin-top: 20px; flex-wrap: wrap; }
+    .admin-tabs { justify-content: flex-start; margin-top: 24px; border-bottom: 1px solid var(--border-subtle); }
+    .admin-tab { padding: 11px 15px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-muted); font: inherit; font-weight: 700; cursor: pointer; }
+    .admin-tab.active { border-color: var(--primary); color: var(--primary); }
+    .admin-records { display: grid; gap: 14px; margin-top: 18px; }
+    .admin-record { padding: 20px; border: 1px solid var(--border-card); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+    .record-heading { align-items: flex-start; }
+    .record-heading h2 { font-size: 1.02rem; }
+    .record-id { color: var(--primary); font-size: .76rem; font-weight: 800; }
+    .record-status { padding: 5px 10px; border-radius: 999px; background: var(--primary-light); color: var(--primary); font-size: .74rem; font-weight: 800; white-space: nowrap; }
+    .record-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-top: 16px; }
+    .record-field { min-width: 0; }
+    .record-field span { display: block; margin-bottom: 3px; color: var(--text-light); font-size: .69rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .record-field strong, .record-field a { color: var(--text-main); font-size: .85rem; overflow-wrap: anywhere; }
+    .record-field a { color: var(--primary); font-weight: 700; }
+    .record-actions { justify-content: flex-start; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-card); }
+    .record-actions select { width: auto; min-width: 170px; }
+    .record-actions button { padding: 9px 13px; }
+    .admin-footer { margin-top: 20px; color: var(--text-light); font-size: .76rem; line-height: 1.5; }
+    .admin-error, .admin-empty { margin-top: 18px; padding: 18px; border-radius: 12px; background: var(--primary-light); color: var(--text-muted); }
+    .admin-error { color: var(--primary-dark); }
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 20px; }
+    .pagination button { padding: 8px 13px; }
+    .pagination span { color: var(--text-muted); font-size: .84rem; }
+    [hidden] { display: none !important; }
+    @media (max-width: 700px) {
+      .admin-page { padding: 20px 14px 40px; }
+      .record-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .admin-panel { padding: 23px 20px; }
+    }
+    @media (max-width: 420px) {
+      .record-grid { grid-template-columns: 1fr; }
+      .admin-nav { margin-bottom: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="admin-page">
+    <div class="admin-wrap">
+      <nav class="admin-nav">
+        <a class="admin-brand" href="index.html">Blood<span>Connect</span> Admin</a>
+        <a href="index.html">Back to site</a>
+      </nav>
+
+      <section class="admin-panel" id="adminLoginPanel">
+        <h1>Staff sign in</h1>
+        <p class="admin-muted">Use the admin API token configured on the server to access private donor and receiver records.</p>
+        <div class="admin-warning">This page contains personal and medical-related information. Only authorized staff should use it. The token is kept in this browser tab's session storage and is never saved in the project files.</div>
+        <form id="adminLoginForm">
+          <div class="form-group">
+            <label class="form-label" for="adminToken">Admin API token</label>
+            <input class="form-input" id="adminToken" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn-hero-primary" type="submit">Sign in securely</button>
+        </form>
+        <div class="admin-error" id="adminLoginError" role="alert" hidden></div>
+      </section>
+
+      <section id="adminDashboard" hidden>
+        <header class="admin-header">
+          <div class="admin-heading">
+            <div>
+              <h1>Records dashboard</h1>
+              <p>Private donor registrations and receiver blood requests.</p>
+            </div>
+            <button class="btn-hero-secondary" id="adminSignOut" type="button">Sign out</button>
+          </div>
+          <div class="admin-warning">Contact details are confidential. Donor and receiver numbers are shown only here to authorized staff. This page can show only information submitted to BloodConnect; it does not have external hospital or account records.</div>
+          <div class="admin-tabs" role="tablist">
+            <button class="admin-tab active" id="donorsTab" type="button" role="tab" aria-selected="true">Donors</button>
+            <button class="admin-tab" id="requestsTab" type="button" role="tab" aria-selected="false">Receiver requests</button>
+          </div>
+          <div class="admin-toolbar">
+            <p class="admin-muted" id="recordSummary" aria-live="polite"></p>
+            <button class="btn-hero-secondary" id="refreshRecords" type="button">Refresh records</button>
+          </div>
+        </header>
+        <div class="admin-error" id="adminError" role="alert" hidden></div>
+        <div class="admin-records" id="adminRecords" aria-live="polite"></div>
+        <div class="pagination" id="adminPagination" hidden>
+          <button class="btn-hero-secondary" id="previousPage" type="button">Previous</button>
+          <span id="pageLabel"></span>
+          <button class="btn-hero-secondary" id="nextPage" type="button">Next</button>
+        </div>
+        <p class="admin-footer">Records are paginated in groups of 50. Phone numbers and consent details are sensitive personal information. Follow your organization's access, retention, and confidentiality policies.</p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const TOKEN_KEY = 'bloodlink_admin_token';
+    const PAGE_SIZE = 50;
+    const state = { type: 'donors', page: 1, total: 0, token: '' };
+    const loginPanel = document.getElementById('adminLoginPanel');
+    const dashboard = document.getElementById('adminDashboard');
+    const loginError = document.getElementById('adminLoginError');
+    const errorBox = document.getElementById('adminError');
+    const records = document.getElementById('adminRecords');
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+    }
+
+    function formatDate(value) {
+      if (!value) return 'Not provided';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? 'Not provided' : date.toLocaleString();
+    }
+
+    function showLogin(message = '') {
+      state.token = '';
+      sessionStorage.removeItem(TOKEN_KEY);
+      dashboard.hidden = true;
+      loginPanel.hidden = false;
+      loginError.textContent = message;
+      loginError.hidden = !message;
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${state.token}`,
+          ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+          ...options.headers
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        showLogin('Your admin session expired or the token is invalid. Please sign in again.');
+        throw new Error('Admin authorization required.');
+      }
+      if (!response.ok) throw new Error(data.error || 'The admin request failed.');
+      return data;
+    }
+
+    async function authenticate(token) {
+      state.token = token;
+      await api('/api/admin/session');
+      sessionStorage.setItem(TOKEN_KEY, token);
+      loginPanel.hidden = true;
+      dashboard.hidden = false;
+      state.page = 1;
+      await loadRecords();
+    }
+
+    function field(label, value) {
+      return `<div class="record-field"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || 'Not provided')}</strong></div>`;
+    }
+
+    function phoneField(label, phone) {
+      const clean = String(phone || '').replace(/[^\d+]/g, '');
+      if (!clean) return field(label, 'Not provided');
+      return `<div class="record-field"><span>${escapeHtml(label)}</span><a href="tel:${escapeHtml(clean)}">${escapeHtml(phone)}</a></div>`;
+    }
+
+    function renderDonor(donor) {
+      const id = donor.id || 'Legacy record';
+      const verified = donor.verified === true;
+      return `<article class="admin-record">
+        <div class="record-heading">
+          <div><h2>${escapeHtml(donor.name || 'Unnamed donor')}</h2><span class="record-id">${escapeHtml(id)}</span></div>
+          <span class="record-status">${verified ? 'Verified' : 'Pending review'}</span>
+        </div>
+        <div class="record-grid">
+          ${field('Age', donor.age)}
+          ${field('Blood group', donor.group)}
+          ${field('City', donor.city)}
+          ${field('Area', donor.area)}
+          ${phoneField('Contact number', donor.private_phone || donor.phone)}
+          ${field('Registration date', formatDate(donor.created_at))}
+          ${field('Consent recorded', donor.consent === true ? 'Yes' : donor.consent === false ? 'No' : 'Not recorded')}
+          ${field('Consent date', formatDate(donor.consent_at))}
+          ${field('Verified date', formatDate(donor.verified_at))}
+        </div>
+        ${donor.id ? `<div class="record-actions"><button class="btn-hero-${verified ? 'secondary' : 'primary'}" type="button" data-action="verify-donor" data-id="${escapeHtml(donor.id)}" data-verified="${verified ? 'false' : 'true'}">${verified ? 'Remove verification' : 'Approve donor'}</button></div>` : ''}
+      </article>`;
+    }
+
+    function renderRequest(record) {
+      const id = record.id || 'Unknown request';
+      const status = record.status || 'Submitted';
+      const statuses = ['Submitted', 'Contacted', 'Matched', 'Fulfilled', 'Cancelled'];
+      return `<article class="admin-record">
+        <div class="record-heading">
+          <div><h2>${escapeHtml(record.patient || 'Receiver request')}</h2><span class="record-id">${escapeHtml(id)}</span></div>
+          <span class="record-status">${escapeHtml(status)}</span>
+        </div>
+        <div class="record-grid">
+          ${field('Blood group', record.group)}
+          ${field('Units requested', record.units)}
+          ${field('Urgency', record.urgency)}
+          ${field('Hospital / location', record.hospital)}
+          ${phoneField('Receiver contact', record.phone)}
+          ${field('Request date', formatDate(record.time))}
+          ${field('Last status update', formatDate(record.updated_at))}
+        </div>
+        <div class="record-actions">
+          <label class="form-label" for="status-${escapeHtml(id)}">Update status</label>
+          <select class="form-select" id="status-${escapeHtml(id)}" data-status-for="${escapeHtml(id)}">
+            ${statuses.map(option => `<option value="${option}" ${option === status ? 'selected' : ''}>${option}</option>`).join('')}
+          </select>
+          <button class="btn-hero-primary" type="button" data-action="update-request" data-id="${escapeHtml(id)}">Save status</button>
+        </div>
+      </article>`;
+    }
+
+    async function loadRecords() {
+      errorBox.hidden = true;
+      records.innerHTML = '<div class="admin-empty">Loading records…</div>';
+      try {
+        const result = await api(`/api/admin/${state.type}?page=${state.page}&per_page=${PAGE_SIZE}`);
+        state.total = result.total;
+        records.innerHTML = result.items.length
+          ? result.items.map(state.type === 'donors' ? renderDonor : renderRequest).join('')
+          : '<div class="admin-empty">No records have been submitted yet.</div>';
+        const first = result.total ? (result.page - 1) * result.per_page + 1 : 0;
+        const last = Math.min(result.page * result.per_page, result.total);
+        document.getElementById('recordSummary').textContent = `${state.type === 'donors' ? 'Donors' : 'Receiver requests'}: showing ${first}–${last} of ${result.total}`;
+        const pageCount = Math.max(1, Math.ceil(result.total / result.per_page));
+        document.getElementById('pageLabel').textContent = `Page ${result.page} of ${pageCount}`;
+        document.getElementById('previousPage').disabled = result.page <= 1;
+        document.getElementById('nextPage').disabled = result.page >= pageCount;
+        document.getElementById('adminPagination').hidden = pageCount <= 1;
+      } catch (error) {
+        records.innerHTML = '';
+        errorBox.textContent = error.message;
+        errorBox.hidden = false;
+      }
+    }
+
+    document.getElementById('adminLoginForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      loginError.hidden = true;
+      try {
+        await authenticate(document.getElementById('adminToken').value);
+        document.getElementById('adminToken').value = '';
+      } catch (error) {
+        state.token = '';
+        loginError.textContent = error.message;
+        loginError.hidden = false;
+      }
+    });
+
+    document.getElementById('donorsTab').addEventListener('click', () => switchType('donors'));
+    document.getElementById('requestsTab').addEventListener('click', () => switchType('requests'));
+    document.getElementById('refreshRecords').addEventListener('click', loadRecords);
+    document.getElementById('previousPage').addEventListener('click', () => { state.page--; loadRecords(); });
+    document.getElementById('nextPage').addEventListener('click', () => { state.page++; loadRecords(); });
+    document.getElementById('adminSignOut').addEventListener('click', () => showLogin());
+
+    function switchType(type) {
+      state.type = type;
+      state.page = 1;
+      document.getElementById('donorsTab').classList.toggle('active', type === 'donors');
+      document.getElementById('donorsTab').setAttribute('aria-selected', String(type === 'donors'));
+      document.getElementById('requestsTab').classList.toggle('active', type === 'requests');
+      document.getElementById('requestsTab').setAttribute('aria-selected', String(type === 'requests'));
+      loadRecords();
+    }
+
+    records.addEventListener('click', async event => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      button.disabled = true;
+      try {
+        if (button.dataset.action === 'verify-donor') {
+          await api(`/api/donors/${encodeURIComponent(button.dataset.id)}/verification`, {
+            method: 'PATCH',
+            body: JSON.stringify({ verified: button.dataset.verified === 'true' })
+          });
+        } else if (button.dataset.action === 'update-request') {
+          const select = records.querySelector(`[data-status-for="${CSS.escape(button.dataset.id)}"]`);
+          await api(`/api/requests/${encodeURIComponent(button.dataset.id)}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: select.value })
+          });
+        }
+        await loadRecords();
+      } catch (error) {
+        errorBox.textContent = error.message;
+        errorBox.hidden = false;
+        button.disabled = false;
+      }
+    });
+
+    const existingToken = sessionStorage.getItem(TOKEN_KEY);
+    if (existingToken) {
+      authenticate(existingToken).catch(() => showLogin('Your previous admin session could not be restored. Please sign in again.'));
+    }
+  </script>
+</body>
+</html>

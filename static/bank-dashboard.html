@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blood Bank Inventory — BloodConnect</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .portal-page { min-height: 100vh; padding: 30px 24px 60px; }
+    .portal-wrap { width: min(100%, 980px); margin: 0 auto; }
+    .portal-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 42px; }
+    .portal-brand { color: var(--text-main); text-decoration: none; font-size: 1.25rem; font-weight: 800; }
+    .portal-brand span { color: var(--primary); }
+    .portal-links { display: flex; align-items: center; gap: 16px; }
+    .portal-links a { color: var(--primary); font-size: .88rem; font-weight: 700; text-decoration: none; }
+    .portal-links button { padding: 8px 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); background: #fff; color: var(--text-muted); cursor: pointer; font: inherit; }
+    .inventory-panel { padding: 28px; border: 1px solid var(--border-card); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+    .inventory-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 22px; }
+    .inventory-heading h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); letter-spacing: -.035em; }
+    .inventory-heading p, .inventory-note { color: var(--text-muted); font-size: .88rem; }
+    .inventory-total { min-width: 150px; padding: 12px 16px; border-radius: 14px; background: var(--primary-light); color: var(--primary-dark); }
+    .inventory-total strong { display: block; font-size: 1.35rem; }
+    .inventory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .inventory-row { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 14px; padding: 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+    .inventory-group { display: grid; place-items: center; min-height: 44px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark); font-weight: 800; }
+    .inventory-row label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: .8rem; font-weight: 700; }
+    .inventory-row input { width: 100%; }
+    .inventory-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 20px; }
+    .inventory-actions .btn-hero-primary { justify-content: center; min-width: 190px; }
+    .inventory-status { color: var(--text-muted); font-size: .84rem; }
+    .inventory-status.error { color: var(--primary-dark); }
+    .inventory-note { margin-top: 20px; padding: 14px; border-radius: 12px; background: #fff8e8; line-height: 1.55; }
+    .inventory-error { margin: 18px 0; padding: 14px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark); }
+    @media (max-width: 600px) {
+      .portal-page { padding: 22px 14px 40px; }
+      .portal-nav { margin-bottom: 28px; }
+      .portal-links { gap: 9px; }
+      .inventory-panel { padding: 20px 16px; }
+      .inventory-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="portal-page">
+    <div class="portal-wrap">
+      <nav class="portal-nav">
+        <a class="portal-brand" href="index.html">Blood<span>Connect</span> Inventory</a>
+        <div class="portal-links">
+          <a href="index.html">Home</a>
+          <button id="bankSignOut" type="button">Sign out</button>
+        </div>
+      </nav>
+      <section class="inventory-panel" aria-labelledby="inventoryTitle">
+        <header class="inventory-heading">
+          <div>
+            <h1 id="inventoryTitle">Blood bank inventory</h1>
+            <p id="bankName">Loading your bank...</p>
+          </div>
+          <div class="inventory-total" aria-live="polite">
+            Total units
+            <strong id="totalUnits">—</strong>
+          </div>
+        </header>
+        <p id="inventoryError" class="inventory-error" role="alert" hidden></p>
+        <form id="inventoryForm">
+          <div class="inventory-grid">
+            <div class="inventory-row"><span class="inventory-group">A+</span><div><label for="stock-A-positive">Available units / bags</label><input class="form-input stock-input" id="stock-A-positive" name="A+" type="number" min="0" max="1000000" step="1" required></div></div>
+            <div class="inventory-row"><span class="inventory-group">A−</span><div><label for="stock-A-negative">Available units / bags</label><input class="form-input stock-input" id="stock-A-negative" name="A-" type="number" min="0" max="1000000" step="1" required></div></div>
+            <div class="inventory-row"><span class="inventory-group">B+</span><div><label for="stock-B-positive">Available units / bags</label><input class="form-input stock-input" id="stock-B-positive" name="B+" type="number" min="0" max="1000000" step="1" required></div></div>
+            <div class="inventory-row"><span class="inventory-group">B−</span><div><label for="stock-B-negative">Available units / bags</label><input class="form-input stock-input" id="stock-B-negative" name="B-" type="number" min="0" max="1000000" step="1" required></div></div>
+            <div class="inventory-row"><span class="inventory-group">O+</span><div><label for="stock-O-positive">Available units / bags</label><input class="form-input stock-input" id="stock-O-positive" name="O+" type="number" min="0" max="1000000" step="1" required></div></div>
+            <div class="inventory-row"><span class="inventory-group">O−</span><div><label for="stock-O-negative">Available units / bags</label><input class="form-input stock-input" id="stock-O-negative" name="O-" type="number" min="0" max="1000000" step="1" required></div></div>
+            <div class="inventory-row"><span class="inventory-group">AB+</span><div><label for="stock-AB-positive">Available units / bags</label><input class="form-input stock-input" id="stock-AB-positive" name="AB+" type="number" min="0" max="1000000" step="1" required></div></div>
+            <div class="inventory-row"><span class="inventory-group">AB−</span><div><label for="stock-AB-negative">Available units / bags</label><input class="form-input stock-input" id="stock-AB-negative" name="AB-" type="number" min="0" max="1000000" step="1" required></div></div>
+          </div>
+          <div class="inventory-actions">
+            <button class="btn-hero-primary" id="saveStockButton" type="submit">Save stock levels</button>
+            <span class="inventory-status" id="inventoryStatus" role="status"></span>
+          </div>
+        </form>
+        <p class="inventory-note">Update counts after a donation has been received and checked in, or after stock has been issued or otherwise changed. Saving replaces this bank's reported counts. Donor sign-ups do not automatically increase inventory.</p>
+      </section>
+    </div>
+  </main>
+  <script>
+    const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+    let csrfToken = '';
+    const inventoryError = document.getElementById('inventoryError');
+    const inventoryStatus = document.getElementById('inventoryStatus');
+    const saveButton = document.getElementById('saveStockButton');
+
+    function showError(message) {
+      inventoryError.textContent = message;
+      inventoryError.hidden = false;
+    }
+
+    async function readApiResponse(response, endpoint) {
+      const body = await response.text();
+      let result = {};
+      if (body.trim()) {
+        try {
+          result = JSON.parse(body);
+        } catch {
+          throw new Error(`The server returned HTTP ${response.status} with an invalid response for ${endpoint}. Check the Flask server.`);
+        }
+      } else if (!response.ok) {
+        throw new Error(`The server returned HTTP ${response.status} without an error message for ${endpoint}.`);
+      } else {
+        throw new Error(`The server returned an empty response for ${endpoint}. Check the Flask server logs.`);
+      }
+      if (!response.ok) throw new Error(result.error || `Request failed (HTTP ${response.status}).`);
+      return result;
+    }
+
+    function setTotal() {
+      const total = bloodGroups.reduce((sum, group) => {
+        const value = Number(document.querySelector(`[name="${group}"]`).value);
+        return sum + (Number.isSafeInteger(value) && value >= 0 ? value : 0);
+      }, 0);
+      document.getElementById('totalUnits').textContent = total.toLocaleString();
+    }
+
+    async function initializeInventory() {
+      try {
+        const sessionResponse = await fetch('/api/bank-auth/session');
+        if (sessionResponse.status === 401) {
+          window.location.replace('bank-login.html');
+          return;
+        }
+        const sessionData = await readApiResponse(sessionResponse, '/api/bank-auth/session');
+        csrfToken = sessionData.csrf_token;
+        document.getElementById('bankName').textContent = sessionData.bank.name;
+
+        const stockResponse = await fetch('/api/bank/stock');
+        const stockData = await readApiResponse(stockResponse, '/api/bank/stock');
+        for (const group of bloodGroups) {
+          document.querySelector(`[name="${group}"]`).value = stockData.stock[group];
+        }
+        setTotal();
+        const updated = stockData.updated_at ? new Date(stockData.updated_at) : null;
+        inventoryStatus.textContent = updated && !Number.isNaN(updated.getTime())
+          ? `Last updated ${updated.toLocaleString()}`
+          : 'No stock update has been recorded yet.';
+      } catch (error) {
+        showError(error.message || 'Could not load inventory. Please try again.');
+      }
+    }
+
+    document.querySelectorAll('.stock-input').forEach(input => {
+      input.addEventListener('input', setTotal);
+    });
+
+    document.getElementById('inventoryForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      inventoryError.hidden = true;
+      const stock = {};
+      for (const group of bloodGroups) {
+        const input = document.querySelector(`[name="${group}"]`);
+        const quantity = Number(input.value);
+        if (!Number.isSafeInteger(quantity) || quantity < 0 || quantity > 1000000) {
+          input.focus();
+          showError('Enter a whole-number stock count from 0 to 1,000,000 for every blood group.');
+          return;
+        }
+        stock[group] = quantity;
+      }
+
+      saveButton.disabled = true;
+      inventoryStatus.textContent = 'Saving stock levels...';
+      inventoryStatus.classList.remove('error');
+      try {
+        const response = await fetch('/api/bank/stock', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({ stock })
+        });
+        if (response.status === 401) {
+          window.location.replace('bank-login.html');
+          return;
+        }
+        const result = await readApiResponse(response, '/api/bank/stock');
+        const updated = new Date(result.updated_at);
+        inventoryStatus.textContent = `Stock saved${Number.isNaN(updated.getTime()) ? '' : ` at ${updated.toLocaleString()}`}.`;
+        setTotal();
+      } catch (error) {
+        inventoryStatus.textContent = error.message || 'Could not save stock levels.';
+        inventoryStatus.classList.add('error');
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    document.getElementById('bankSignOut').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/bank-auth/logout', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': csrfToken }
+        });
+        if (!response.ok) throw new Error('Could not sign out. Please try again.');
+        window.location.href = 'bank-login.html';
+      } catch (error) {
+        showError(error.message);
+      }
+    });
+
+    initializeInventory();
+  </script>
+</body>
+</html>

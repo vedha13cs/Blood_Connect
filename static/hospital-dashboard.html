@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospital Partner Portal — BloodConnect</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .portal-page { min-height: 100vh; padding: 30px 24px 60px; }
+    .portal-wrap { width: min(100%, 980px); margin: 0 auto; }
+    .portal-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 42px; }
+    .portal-brand { color: var(--text-main); text-decoration: none; font-size: 1.25rem; font-weight: 800; }
+    .portal-brand span { color: var(--primary); }
+    .portal-links { display: flex; align-items: center; gap: 16px; }
+    .portal-links a { color: var(--primary); font-size: .88rem; font-weight: 700; text-decoration: none; }
+    .portal-links button { padding: 8px 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); background: #fff; color: var(--text-muted); cursor: pointer; font: inherit; }
+    .portal-heading { margin-bottom: 24px; }
+    .portal-heading h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -.035em; }
+    .portal-heading p { margin-top: 6px; color: var(--text-muted); }
+    .portal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .portal-card { padding: 24px; border: 1px solid var(--border-card); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+    .portal-card h2 { margin-bottom: 8px; font-size: 1.08rem; }
+    .portal-card p { margin-bottom: 18px; color: var(--text-muted); font-size: .88rem; }
+    .portal-card .btn-hero-primary, .portal-card .btn-hero-secondary { justify-content: center; }
+    .partner-list { display: grid; gap: 12px; }
+    .partner-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 17px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: #fff; }
+    .partner-card h3 { font-size: .98rem; }
+    .partner-card p { margin-top: 4px; color: var(--text-muted); font-size: .83rem; }
+    .portal-note { margin-top: 18px; color: var(--text-light); font-size: .78rem; line-height: 1.5; }
+    .portal-error { padding: 16px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark); }
+    @media (max-width: 600px) { .portal-page { padding: 22px 14px 40px; } .portal-grid { grid-template-columns: 1fr; } .portal-nav { align-items: flex-start; } .portal-links { gap: 9px; } .partner-card { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main class="portal-page">
+    <div class="portal-wrap">
+      <nav class="portal-nav">
+        <a class="portal-brand" href="index.html">Blood<span>Connect</span> Hospital</a>
+        <div class="portal-links">
+          <a href="index.html">Home</a>
+          <button id="hospitalSignOut" type="button">Sign out</button>
+        </div>
+      </nav>
+      <header class="portal-heading">
+        <h1 id="hospitalWelcome">Hospital partner portal</h1>
+        <p>Quick access to blood-bank contacts and emergency request tracking.</p>
+      </header>
+      <section class="portal-grid">
+        <article class="portal-card">
+          <h2>Submit a patient blood request</h2>
+          <p>Record a blood requirement and receive a tracking ID.</p>
+          <a class="btn-hero-primary" href="index.html?open=request">Create request</a>
+        </article>
+        <article class="portal-card">
+          <h2>Track a request</h2>
+          <p>Check the latest recorded status using a request tracking ID.</p>
+          <a class="btn-hero-secondary" href="index.html?open=track">Track request</a>
+        </article>
+      </section>
+      <section>
+        <h2 style="margin-bottom: 6px;">Verified blood-bank directory</h2>
+        <p style="margin-bottom: 16px; color: var(--text-muted); font-size: .86rem;">Call the listed bank to confirm stock before arranging transport.</p>
+        <div class="partner-list" id="hospitalBankList" aria-live="polite"></div>
+      </section>
+      <p class="portal-note">Demo hospital portal: hospital accounts are not verified in this prototype. Directory records require staff verification; live inventory and automatic hospital-to-hospital transfers are not connected.</p>
+    </div>
+  </main>
+  <script>
+    const user = JSON.parse(localStorage.getItem('bc_user') || 'null');
+    if (!user || user.role !== 'Hospital') {
+      window.location.replace('hospital-login.html');
+    } else {
+      document.getElementById('hospitalWelcome').textContent = `Welcome, ${user.name}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+    }
+
+    async function loadBanks() {
+      const container = document.getElementById('hospitalBankList');
+      try {
+        const response = await fetch('/api/banks');
+        const banks = await response.json();
+        if (!response.ok) throw new Error(banks.error || 'Unable to load directory.');
+        container.innerHTML = banks.length ? banks.map(bank => `
+          <article class="partner-card">
+            <div>
+              <h3>${escapeHtml(bank.name)}</h3>
+              <p>${escapeHtml(bank.address)}, ${escapeHtml(bank.city)}</p>
+              <p>${escapeHtml(bank.phone)}</p>
+            </div>
+            ${bank.phone ? `<a class="btn-contact" href="tel:${escapeHtml(String(bank.phone).replace(/[^\d+]/g, ''))}">Call blood bank</a>` : ''}
+          </article>
+        `).join('') : '<p class="portal-note">No verified blood-bank listings are available yet.</p>';
+      } catch (error) {
+        container.innerHTML = `<p class="portal-error">${escapeHtml(error.message)}</p>`;
+      }
+    }
+
+    document.getElementById('hospitalSignOut').addEventListener('click', () => {
+      localStorage.removeItem('bc_user');
+      window.location.href = 'hospital-login.html';
+    });
+    loadBanks();
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receiver Dashboard — BloodConnect</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .dashboard-page { min-height: 100vh; padding: 30px 24px 60px; }
+    .dashboard-wrap { width: min(100%, 980px); margin: 0 auto; }
+    .dashboard-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 38px; }
+    .dashboard-brand { color: var(--text-main); text-decoration: none; font-size: 1.25rem; font-weight: 800; }
+    .dashboard-brand span { color: var(--primary); }
+    .dashboard-nav-actions { display: flex; align-items: center; gap: 16px; }
+    .dashboard-nav-actions a { color: var(--primary); font-size: 0.88rem; font-weight: 700; text-decoration: none; }
+    .dashboard-nav-actions button { padding: 8px 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); background: #fff; color: var(--text-muted); cursor: pointer; font: inherit; }
+    .dashboard-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+    .dashboard-heading h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -0.035em; }
+    .dashboard-heading p { margin-top: 6px; color: var(--text-muted); }
+    .dashboard-card { padding: 24px; border: 1px solid var(--border-card); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+    .request-list { display: grid; gap: 12px; }
+    .request-card { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; padding: 18px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+    .request-card h2 { font-size: 1rem; }
+    .request-card p { margin-top: 4px; color: var(--text-muted); font-size: 0.84rem; }
+    .request-id { color: var(--primary) !important; font-weight: 800; }
+    .request-status { justify-self: end; padding: 5px 10px; border-radius: var(--radius-pill); background: var(--primary-light); color: var(--primary); font-size: 0.76rem; font-weight: 700; }
+    .request-card a { grid-column: 2; justify-self: end; color: var(--primary); font-size: 0.82rem; font-weight: 700; text-decoration: none; }
+    .empty-state { padding: 32px 16px; text-align: center; color: var(--text-muted); }
+    .empty-state p { margin-bottom: 16px; }
+    .dashboard-note { margin-top: 18px; color: var(--text-light); font-size: 0.78rem; }
+    @media (max-width: 600px) {
+      .dashboard-heading { align-items: stretch; flex-direction: column; }
+      .dashboard-heading .btn-hero-primary { justify-content: center; }
+      .dashboard-card { padding: 16px; }
+      .request-card { grid-template-columns: 1fr; }
+      .request-status, .request-card a { grid-column: 1; justify-self: start; }
+      .dashboard-nav { align-items: flex-start; }
+      .dashboard-nav-actions { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="dashboard-page">
+    <div class="dashboard-wrap">
+      <nav class="dashboard-nav">
+        <a class="dashboard-brand" href="index.html">Blood<span>Connect</span></a>
+        <div class="dashboard-nav-actions">
+          <a href="index.html">Home</a>
+          <button type="button" id="receiverLogout">Sign out</button>
+        </div>
+      </nav>
+      <section>
+        <div class="dashboard-heading">
+          <div>
+            <h1 id="welcomeHeading">Receiver Dashboard</h1>
+            <p>Your blood request activity and tracking links.</p>
+          </div>
+          <a class="btn-hero-primary" href="index.html?open=request">+ New Blood Request</a>
+        </div>
+        <div class="dashboard-card">
+          <div class="request-list" id="receiverRequests"></div>
+          <p class="dashboard-note">Requests are stored in this browser in the current demo. Sign-in is not connected to a verified account yet.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const savedUser = JSON.parse(localStorage.getItem('bc_user') || 'null');
+    if (!savedUser || savedUser.role !== 'Receiver') {
+      window.location.replace('receiver-login.html');
+    } else {
+      document.getElementById('welcomeHeading').textContent = `Welcome, ${savedUser.name}`;
+    }
+
+    const requests = JSON.parse(localStorage.getItem('bc_requests') || '{}');
+    const requestList = Object.values(requests).sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+    const requestContainer = document.getElementById('receiverRequests');
+    if (!requestList.length) {
+      requestContainer.innerHTML = '<div class="empty-state"><p>You have no saved requests yet.</p><a class="btn-hero-secondary" href="index.html?open=request">Create your first request</a></div>';
+    } else {
+      requestContainer.innerHTML = requestList.map((request) => `
+        <article class="request-card">
+          <div>
+            <h2>${escapeText(request.patient || 'Blood request')} &mdash; ${escapeText(request.group || '')}</h2>
+            <p>${Number(request.units) || 1} unit(s) &bull; ${escapeText(request.hospital || '')} &bull; ${escapeText(request.urgency || '')}</p>
+            <p class="request-id">${escapeText(request.id || '')}</p>
+          </div>
+          <span class="request-status">${escapeText(request.status || 'Submitted')}</span>
+          <a href="index.html?track=${encodeURIComponent(request.id || '')}">Track request &rarr;</a>
+        </article>
+      `).join('');
+    }
+
+    function escapeText(value) {
+      return String(value).replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+    }
+
+    document.getElementById('receiverLogout').addEventListener('click', () => {
+      localStorage.removeItem('bc_user');
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

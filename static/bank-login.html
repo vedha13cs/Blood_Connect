@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blood Bank Staff Sign In — BloodConnect</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .standalone-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .standalone-card { width: min(100%, 460px); padding: 32px; background: #fff; border: 1px solid var(--border-card); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); }
+    .standalone-brand { display: inline-flex; align-items: center; margin-bottom: 28px; color: var(--text-main); text-decoration: none; font-size: 1.2rem; font-weight: 800; }
+    .standalone-brand span { color: var(--primary); }
+    .standalone-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 18px; border-radius: 14px; background: var(--primary-light); color: var(--primary); font-size: 1.35rem; }
+    .standalone-card h1 { margin-bottom: 6px; font-size: 1.7rem; letter-spacing: -0.03em; }
+    .standalone-copy { margin-bottom: 24px; color: var(--text-muted); font-size: 0.9rem; }
+    .standalone-card .btn-hero-primary { width: 100%; justify-content: center; margin-top: 8px; }
+    .standalone-note { margin-top: 16px; padding: 12px; border-radius: 10px; background: var(--primary-light); color: var(--text-muted); font-size: 0.78rem; }
+    .standalone-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 20px; font-size: 0.83rem; }
+    .standalone-links a { color: var(--primary); font-weight: 700; text-decoration: none; }
+    .standalone-error { margin-top: 14px; color: var(--primary-dark); font-size: 0.85rem; }
+    .standalone-error-link { display: block; margin-top: 8px; color: var(--primary); font-size: 0.85rem; font-weight: 700; }
+    @media (max-width: 480px) { .standalone-card { padding: 24px 20px; } }
+  </style>
+</head>
+<body>
+  <main class="standalone-page">
+    <section class="standalone-card">
+      <a class="standalone-brand" href="index.html">Blood<span>Connect</span></a>
+      <div class="standalone-icon" aria-hidden="true">+</div>
+      <h1>Blood bank staff sign in</h1>
+      <p class="standalone-copy">Sign in to view and update your blood bank's current stock.</p>
+      <form id="bankLoginForm">
+        <div class="form-group">
+          <label class="form-label" for="bankEmail">Staff email</label>
+          <input class="form-input" id="bankEmail" type="email" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="bankPassword">Password</label>
+          <input class="form-input" id="bankPassword" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn-hero-primary" id="bankLoginButton" type="submit">Sign in to inventory</button>
+        <p class="standalone-error" id="bankLoginError" role="alert" hidden></p>
+      </form>
+      <p class="standalone-note">Bank staff accounts are created by a BloodLink administrator. Stock counts must be confirmed and updated by authorized bank staff.</p>
+      <div class="standalone-links">
+        <a href="index.html">Back to home</a>
+        <a href="hospital-login.html">Hospital sign in</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    const loginForm = document.getElementById('bankLoginForm');
+    const loginError = document.getElementById('bankLoginError');
+    const loginButton = document.getElementById('bankLoginButton');
+
+    async function readApiResponse(response, endpoint) {
+      if (response.status === 405) {
+        const error = new Error(
+          'This page reached a server that does not accept BloodLink sign-in requests (HTTP 405). In local development, this usually means the page was opened with VS Code Live Server or another server instead of Flask. Start BloodLink with "python app.py", then open http://localhost:5000/bank-login.html.'
+        );
+        throw error;
+      }
+
+      const body = await response.text();
+      let result = {};
+      if (body.trim()) {
+        try {
+          result = JSON.parse(body);
+        } catch {
+          throw new Error(
+            `The server returned HTTP ${response.status} with an invalid response for ${endpoint}. Restart BloodLink with "python app.py" and open this page at http://localhost:5000/bank-login.html.`
+          );
+        }
+      } else if (!response.ok) {
+        throw new Error(
+          `The server returned HTTP ${response.status} for ${endpoint} without an error message. Restart BloodLink with "python app.py" and open this page at http://localhost:5000/bank-login.html.`
+        );
+      } else {
+        throw new Error(`The server returned an empty response for ${endpoint}. Check the Flask server logs.`);
+      }
+      if (!response.ok) throw new Error(result.error || `Sign in failed (HTTP ${response.status}).`);
+      return result;
+    }
+
+    loginForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      loginError.hidden = true;
+      loginButton.disabled = true;
+      try {
+        const response = await fetch('/api/bank-auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('bankEmail').value,
+            password: document.getElementById('bankPassword').value
+          })
+        });
+        await readApiResponse(response, '/api/bank-auth/login');
+        window.location.href = 'bank-dashboard.html';
+      } catch (error) {
+        loginError.textContent = error.message || 'Could not sign in. Please try again.';
+        loginError.hidden = false;
+      } finally {
+        loginButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

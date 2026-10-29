@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospital Sign In — BloodConnect</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .standalone-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .standalone-card { width: min(100%, 460px); padding: 32px; background: #fff; border: 1px solid var(--border-card); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); }
+    .standalone-brand { display: inline-flex; align-items: center; margin-bottom: 28px; color: var(--text-main); text-decoration: none; font-size: 1.2rem; font-weight: 800; }
+    .standalone-brand span { color: var(--primary); }
+    .standalone-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 18px; border-radius: 14px; background: var(--primary-light); color: var(--primary); font-size: 1.35rem; }
+    .standalone-card h1 { margin-bottom: 6px; font-size: 1.7rem; letter-spacing: -0.03em; }
+    .standalone-copy { margin-bottom: 24px; color: var(--text-muted); font-size: 0.9rem; }
+    .standalone-card .btn-hero-primary { width: 100%; justify-content: center; margin-top: 8px; }
+    .standalone-note { margin-top: 16px; padding: 12px; border-radius: 10px; background: var(--primary-light); color: var(--text-muted); font-size: 0.78rem; }
+    .standalone-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 20px; font-size: 0.83rem; }
+    .standalone-links a { color: var(--primary); font-weight: 700; text-decoration: none; }
+    @media (max-width: 480px) { .standalone-card { padding: 24px 20px; } }
+  </style>
+</head>
+<body>
+  <main class="standalone-page">
+    <section class="standalone-card">
+      <a class="standalone-brand" href="index.html">Blood<span>Connect</span></a>
+      <div class="standalone-icon" aria-hidden="true">+</div>
+      <h1>Hospital sign in</h1>
+      <p class="standalone-copy">Open the hospital and blood-bank partner portal.</p>
+      <form id="hospitalLoginForm">
+        <div class="form-group">
+          <label class="form-label" for="hospitalEmail">Hospital email or partner ID</label>
+          <input class="form-input" id="hospitalEmail" type="text" autocomplete="username" placeholder="hospital@example.org" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="hospitalPassword">Password</label>
+          <input class="form-input" id="hospitalPassword" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn-hero-primary" type="submit">Continue to hospital portal</button>
+      </form>
+      <p class="standalone-note">Demo portal: this prototype does not yet verify hospital accounts or passwords.</p>
+      <div class="standalone-links">
+        <a href="index.html">Back to home</a>
+        <a href="donor-login.html">Donor</a>
+        <a href="receiver-login.html">Receiver</a>
+        <a href="admin.html">Admin</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.getElementById('hospitalLoginForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const email = document.getElementById('hospitalEmail').value.trim();
+      localStorage.setItem('bc_user', JSON.stringify({
+        name: email.includes('@') ? email.split('@')[0] : email,
+        role: 'Hospital',
+        email
+      }));
+      window.location.href = 'hospital-dashboard.html';
+    });
+  </script>
+</body>
+</html>
